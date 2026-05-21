@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TYPEX — Typing Speed Test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=Bebas+Neue&family=Barlow+Condensed:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0a0a;
+  --surface:#111111;
+  --surface2:#181818;
+  --border:#222222;
+  --red:#e03030;
+  --red-dim:#8a1a1a;
+  --red-glow:#e0303022;
+  --white:#f0ece4;
+  --white-dim:#888880;
+  --white-muted:#3a3a38;
+  --correct:#f0ece4;
+  --wrong:#e03030;
+  --caret:#e03030;
+}
+html,body{height:100%;background:var(--bg);color:var(--white);font-family:'JetBrains Mono',monospace;overflow:hidden}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;transition:opacity 0.35s,transform 0.35s}
+.screen.hidden{opacity:0;pointer-events:none;transform:translateY(16px)}
+
+/* ── SHARED HEADER ── */
+.header{display:flex;align-items:center;justify-content:space-between;padding:1.2rem 3rem;border-bottom:1px solid var(--border);flex-shrink:0}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:0.12em;color:var(--white);cursor:pointer}
+.logo em{color:var(--red);font-style:normal}
+.header-hint{font-size:11px;color:var(--white-muted);letter-spacing:0.1em;display:flex;gap:12px;align-items:center}
+.header-hint kbd{background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:2px 7px;font-size:10px;color:var(--white-dim);font-family:'JetBrains Mono',monospace}
+
+/* ══════════════════════════════════════
+   HOME SCREEN
+══════════════════════════════════════ */
+#screen-home{overflow-y:auto}
+.home-body{display:grid;grid-template-columns:1fr 340px;grid-template-rows:auto auto;gap:1px;background:var(--border);flex:1;min-height:0}
+.home-cell{background:var(--bg);padding:2rem 2.5rem}
+
+/* Welcome hero */
+.home-hero{grid-column:1/3;border-bottom:1px solid var(--border);padding:2.5rem 3rem;display:flex;align-items:center;gap:3rem;background:linear-gradient(135deg,var(--bg) 60%,#1a0a0a)}
+.hero-left{flex:1}
+.hero-title{font-family:'Bebas Neue',sans-serif;font-size:3.8rem;line-height:0.95;letter-spacing:0.05em;color:var(--white)}
+.hero-title em{color:var(--red);font-style:normal}
+.hero-sub{font-size:13px;color:var(--white-dim);margin-top:0.8rem;letter-spacing:0.05em;line-height:1.6;max-width:420px}
+.hero-start-btn{margin-top:1.5rem;display:inline-flex;align-items:center;gap:10px;background:var(--red);border:none;color:var(--white);font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:0.12em;padding:12px 28px;border-radius:6px;cursor:pointer;transition:all 0.15s}
+.hero-start-btn:hover{background:#c02020;transform:translateX(2px)}
+.hero-right{display:flex;gap:1.5rem}
+.pb-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1.5rem 1.8rem;text-align:center;min-width:110px;position:relative;overflow:hidden}
+.pb-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--red)}
+.pb-card-label{font-size:9px;letter-spacing:0.2em;color:var(--white-muted);text-transform:uppercase;margin-bottom:6px;font-family:'Barlow Condensed',sans-serif}
+.pb-card-val{font-family:'Bebas Neue',sans-serif;font-size:2.8rem;color:var(--red);line-height:1}
+.pb-card-val.white{color:var(--white)}
+.pb-card-sub{font-size:10px;color:var(--white-muted);margin-top:4px;letter-spacing:0.08em}
+
+/* Key heatmap */
+.section-title{font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:0.2em;color:var(--white-muted);text-transform:uppercase;margin-bottom:1.2rem;font-weight:400}
+.keyboard{display:flex;flex-direction:column;gap:5px}
+.key-row{display:flex;gap:5px}
+.key{width:38px;height:38px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;letter-spacing:0.05em;border:1px solid var(--border);background:var(--surface);color:var(--white-dim);transition:all 0.2s;position:relative;flex-shrink:0;cursor:default}
+.key.wide{width:54px}
+.key.wider{width:70px}
+.key.space{width:200px}
+.key-error-0{background:var(--surface);color:var(--white-muted)}
+.key-error-1{background:#2a1010;border-color:#5a2020;color:#cc6060}
+.key-error-2{background:#3a1010;border-color:#8a2a2a;color:#e07070}
+.key-error-3{background:#5a1010;border-color:#c03030;color:var(--white)}
+.key-error-4{background:#8a1a1a;border-color:var(--red);color:var(--white);box-shadow:0 0 8px var(--red-glow)}
+.key-badge{position:absolute;top:-4px;right:-4px;background:var(--red);color:var(--white);font-size:8px;font-weight:700;width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center;display:none}
+
+/* Recent runs */
+.runs-list{display:flex;flex-direction:column;gap:6px}
+.run-row{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface);border-radius:6px;border:1px solid var(--border2, #1a1a1a);transition:border-color 0.15s}
+.run-row:hover{border-color:var(--border)}
+.run-wpm{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:var(--red);width:50px;line-height:1}
+.run-details{flex:1;font-size:11px;color:var(--white-muted);line-height:1.5}
+.run-acc{font-family:'Barlow Condensed',sans-serif;font-size:1rem;color:var(--white-dim);font-weight:600;letter-spacing:0.05em}
+.run-medal{font-size:14px}
+.no-runs{font-size:12px;color:var(--white-muted);opacity:0.5;text-align:center;padding:2rem 0}
+
+/* Practice modes */
+.practice-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.practice-btn{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;cursor:pointer;text-align:left;transition:all 0.15s;position:relative;overflow:hidden}
+.practice-btn::after{content:'';position:absolute;inset:0;background:var(--red);opacity:0;transition:opacity 0.15s}
+.practice-btn:hover{border-color:#444}
+.practice-btn:hover::after{opacity:0.04}
+.practice-btn-icon{font-size:18px;margin-bottom:6px}
+.practice-btn-title{font-size:12px;font-weight:700;color:var(--white);letter-spacing:0.05em;margin-bottom:2px}
+.practice-btn-sub{font-size:10px;color:var(--white-muted);line-height:1.4}
+
+/* ══════════════════════════════════════
+   TEST SCREEN
+══════════════════════════════════════ */
+.options-wrap{display:flex;justify-content:center;padding:1.4rem 3rem 0;flex-shrink:0}
+.options-bar{display:flex;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.opt-group{display:flex;align-items:center;border-right:1px solid var(--border)}
+.opt-group:last-child{border-right:none}
+.opt-group-label{font-size:9px;letter-spacing:0.15em;color:var(--white-muted);text-transform:uppercase;padding:0 10px 0 14px;white-space:nowrap}
+.opt-btn{background:none;border:none;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--white-muted);padding:10px 14px;cursor:pointer;transition:all 0.15s;white-space:nowrap;letter-spacing:0.05em}
+.opt-btn:hover{color:var(--white);background:var(--surface2)}
+.opt-btn.active{color:var(--red);background:var(--surface2)}
+.opt-btn.active-toggle{color:var(--red)}
+
+.test-area{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 3rem;min-height:0}
+.timer-big{font-family:'Bebas Neue',sans-serif;font-size:3.5rem;color:var(--red);letter-spacing:0.05em;margin-bottom:1.5rem;min-height:4rem;transition:color 0.3s;font-variant-numeric:tabular-nums}
+.timer-big.dim{color:var(--white-muted)}
+.timer-big.urgent{color:var(--red);animation:timer-pulse 0.5s ease-in-out infinite alternate}
+@keyframes timer-pulse{from{opacity:1}to{opacity:0.5}}
+
+.words-container{width:100%;max-width:900px;position:relative}
+.words-mask{overflow:hidden;height:5.8em;position:relative}
+.words-mask::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2.5em;background:linear-gradient(transparent,var(--bg));pointer-events:none;z-index:2}
+.words-row{font-size:1.5rem;line-height:2;display:flex;flex-wrap:wrap;gap:0 0.5em;user-select:none;transition:transform 0.25s ease;position:relative}
+.char{position:relative;color:var(--white-muted);transition:color 0.06s}
+.char.correct{color:var(--correct)}
+.char.wrong{color:var(--wrong)}
+.char.active::after{content:'';position:absolute;left:-1px;top:50%;transform:translateY(-50%);width:2px;height:0.75em;background:var(--caret);border-radius:1px;animation:blink 0.65s step-end infinite;box-shadow:0 0 8px var(--caret)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.word-wrap{display:inline-flex;white-space:nowrap;position:relative}
+.word-wrap.wrong-word::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:var(--red);opacity:0.4}
+.ghost-input{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;top:0;left:0}
+.cursor-hint{margin-top:1.4rem;font-size:12px;color:var(--white-muted);text-align:center;letter-spacing:0.05em;opacity:0.6;transition:opacity 0.3s}
+.cursor-hint.typing{opacity:0}
+
+.live-stats{display:flex;gap:3rem;justify-content:center;margin-top:1.5rem;opacity:0;transition:opacity 0.3s}
+.live-stats.show{opacity:1}
+.live-stat{text-align:center}
+.live-stat-label{font-size:10px;letter-spacing:0.15em;color:var(--white-muted);text-transform:uppercase;margin-bottom:2px}
+.live-stat-val{font-size:1.6rem;font-weight:700;color:var(--white);font-variant-numeric:tabular-nums}
+.live-stat-val.red{color:var(--red)}
+
+.progress-wrap{width:100%;max-width:900px;height:2px;background:var(--surface2);border-radius:1px;margin-top:1.5rem;overflow:hidden}
+.progress-fill{height:100%;background:var(--red);width:0%;transition:width 0.1s linear;border-radius:1px;box-shadow:0 0 6px var(--red)}
+
+.deco-num{position:fixed;right:3rem;top:50%;transform:translateY(-50%);font-family:'Bebas Neue',sans-serif;font-size:18rem;color:var(--surface);line-height:1;pointer-events:none;z-index:0;user-select:none;transition:color 0.3s}
+
+/* ══════════════════════════════════════
+   RESULT SCREEN
+══════════════════════════════════════ */
+#screen-result{background:var(--bg);overflow-y:auto}
+.result-header{display:flex;align-items:center;justify-content:space-between;padding:1.2rem 3rem;border-bottom:1px solid var(--border);flex-shrink:0}
+.result-logo{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:0.12em;color:var(--white);cursor:pointer}
+.result-logo em{color:var(--red);font-style:normal}
+.result-body{display:grid;grid-template-columns:200px 1fr;gap:0}
+.result-left{padding:2.5rem 2rem 2rem 3rem;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:1.8rem}
+.big-stat{display:flex;flex-direction:column;gap:2px}
+.big-stat-label{font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:0.2em;color:var(--white-muted);text-transform:uppercase;font-weight:300}
+.big-stat-val{font-family:'Bebas Neue',sans-serif;font-size:5rem;color:var(--red);line-height:0.9;letter-spacing:0.02em}
+.big-stat-val.white{color:var(--white)}
+.big-stat-unit{font-family:'Barlow Condensed',sans-serif;font-size:12px;color:var(--white-muted);margin-top:4px;font-weight:300;letter-spacing:0.1em}
+.pb-badge{display:inline-flex;align-items:center;gap:5px;background:var(--red-glow);border:1px solid var(--red-dim);border-radius:4px;padding:3px 8px;font-size:10px;color:var(--red);letter-spacing:0.1em;margin-top:6px}
+
+.result-right{padding:2rem 2.5rem;display:flex;flex-direction:column;gap:1.5rem}
+.chart-title{font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:0.2em;color:var(--white-muted);text-transform:uppercase}
+.chart-wrap{flex:1;min-height:200px;position:relative}
+.mini-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border)}
+.mini-stat{background:var(--bg);padding:1rem 1.2rem}
+.mini-stat-label{font-size:9px;letter-spacing:0.15em;color:var(--white-muted);text-transform:uppercase;margin-bottom:5px;font-family:'Barlow Condensed',sans-serif;font-weight:300}
+.mini-stat-val{font-size:1.4rem;color:var(--red);font-weight:700;font-variant-numeric:tabular-nums;font-family:'Bebas Neue',sans-serif;letter-spacing:0.05em}
+.mini-stat-val.w{color:var(--white)}
+.type-info{font-size:11px;color:var(--white-muted);letter-spacing:0.06em;margin-top:auto;line-height:1.6}
+.type-info span{color:var(--red)}
+
+.result-footer{display:flex;justify-content:center;gap:1rem;padding:1.4rem 3rem;border-top:1px solid var(--border);flex-shrink:0}
+.res-btn{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.1em;padding:10px 28px;border-radius:6px;cursor:pointer;transition:all 0.15s}
+.res-btn.primary{background:var(--red);border:1px solid var(--red);color:var(--white)}
+.res-btn.primary:hover{background:#c02020}
+.res-btn.secondary{background:none;border:1px solid var(--border);color:var(--white-dim)}
+.res-btn.secondary:hover{border-color:var(--white-dim);color:var(--white)}
+</style>
+</head>
+<body>
+
+<!-- ══ HOME SCREEN ══ -->
+<div class="screen" id="screen-home">
+  <div class="header">
+    <div class="logo">TYPE<em>X</em></div>
+    <div class="header-hint" style="font-size:12px;color:var(--white-dim)">Master your keyboard. Track your progress.</div>
+  </div>
+
+  <div style="flex:1;overflow-y:auto">
+    <!-- Hero -->
+    <div class="home-hero">
+      <div class="hero-left">
+        <div class="hero-title">YOUR<br>TYPING<br><em>ARENA</em></div>
+        <div class="hero-sub">Real-time WPM tracking · Per-key error heatmap · Instant feedback · Multiple difficulty modes</div>
+        <button class="hero-start-btn" id="home-start-btn">▶ &nbsp;START TYPING TEST</button>
+      </div>
+      <div class="hero-right" id="pb-cards">
+        <div class="pb-card">
+          <div class="pb-card-label">Best WPM</div>
+          <div class="pb-card-val" id="pb-wpm">—</div>
+          <div class="pb-card-sub">words/min</div>
+        </div>
+        <div class="pb-card">
+          <div class="pb-card-label">Best Acc</div>
+          <div class="pb-card-val white" id="pb-acc">—</div>
+          <div class="pb-card-sub">accuracy</div>
+        </div>
+        <div class="pb-card">
+          <div class="pb-card-label">Runs</div>
+          <div class="pb-card-val white" id="pb-runs">0</div>
+          <div class="pb-card-sub">sessions</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 340px;min-height:300px">
+
+      <!-- Key Error Heatmap -->
+      <div class="home-cell" style="border-right:1px solid var(--border)">
+        <div class="section-title">⌨ Key Error Heatmap — <span id="heatmap-subtitle" style="color:var(--white-muted)">No data yet — complete a test to see your weak keys</span></div>
+        <div class="keyboard" id="keyboard-heatmap">
+          <!-- rows built by JS -->
+        </div>
+        <div style="margin-top:1rem;display:flex;align-items:center;gap:8px;font-size:10px;color:var(--white-muted)">
+          <span>Few errors</span>
+          <div style="display:flex;gap:3px">
+            <div style="width:14px;height:14px;border-radius:2px;background:var(--surface);border:1px solid var(--border)"></div>
+            <div style="width:14px;height:14px;border-radius:2px;background:#2a1010;border:1px solid #5a2020"></div>
+            <div style="width:14px;height:14px;border-radius:2px;background:#4a1010;border:1px solid #aa2a2a"></div>
+            <div style="width:14px;height:14px;border-radius:2px;background:#8a1a1a;border:1px solid var(--red)"></div>
+          </div>
+          <span>Many errors</span>
+        </div>
+      </div>
+
+      <!-- Right column: Recent runs + Practice -->
+      <div style="display:flex;flex-direction:column">
+        <div class="home-cell" style="border-bottom:1px solid var(--border)">
+          <div class="section-title">📊 Recent Results</div>
+          <div class="runs-list" id="runs-list">
+            <div class="no-runs">Complete a test to see results here</div>
+          </div>
+        </div>
+        <div class="home-cell">
+          <div class="section-title">🎯 Quick Practice</div>
+          <div class="practice-grid">
+            <button class="practice-btn" data-practice="home-row">
+              <div class="practice-btn-icon">🏠</div>
+              <div class="practice-btn-title">HOME ROW</div>
+              <div class="practice-btn-sub">asdfjkl; — build muscle memory</div>
+            </button>
+            <button class="practice-btn" data-practice="numbers">
+              <div class="practice-btn-icon">🔢</div>
+              <div class="practice-btn-title">NUMBERS</div>
+              <div class="practice-btn-sub">0–9 digits only</div>
+            </button>
+            <button class="practice-btn" data-practice="top-row">
+              <div class="practice-btn-icon">⌨</div>
+              <div class="practice-btn-title">TOP ROW</div>
+              <div class="practice-btn-sub">qwertyuiop keys</div>
+            </button>
+            <button class="practice-btn" data-practice="common">
+              <div class="practice-btn-icon">📝</div>
+              <div class="practice-btn-title">COMMON WORDS</div>
+              <div class="practice-btn-sub">Top 200 most-used words</div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══ TEST SCREEN ══ -->
+<div class="screen hidden" id="screen-test">
+  <div class="deco-num" id="deco-num">30</div>
+  <div class="header">
+    <div class="logo" id="test-logo">TYPE<em>X</em></div>
+    <div class="header-hint"><kbd>tab</kbd> restart &nbsp;&nbsp; <kbd>esc</kbd> home</div>
+  </div>
+  <div class="options-wrap">
+    <div class="options-bar">
+      <div class="opt-group">
+        <span class="opt-group-label">include</span>
+        <button class="opt-btn" data-toggle="punctuation">@ punct</button>
+        <button class="opt-btn" data-toggle="numbers"># nums</button>
+      </div>
+      <div class="opt-group">
+        <span class="opt-group-label">difficulty</span>
+        <button class="opt-btn active" data-diff="easy">easy</button>
+        <button class="opt-btn" data-diff="medium">medium</button>
+        <button class="opt-btn" data-diff="hard">hard</button>
+      </div>
+      <div class="opt-group">
+        <span class="opt-group-label">time</span>
+        <button class="opt-btn" data-time="15">15s</button>
+        <button class="opt-btn active" data-time="30">30s</button>
+        <button class="opt-btn" data-time="60">60s</button>
+        <button class="opt-btn" data-time="120">120s</button>
+      </div>
+    </div>
+  </div>
+  <div class="test-area">
+    <div class="timer-big dim" id="timer-display">30</div>
+    <div class="words-container">
+      <div class="words-mask">
+        <div class="words-row" id="words-row"></div>
+      </div>
+      <input class="ghost-input" id="ghost-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+    </div>
+    <div class="cursor-hint" id="cursor-hint">click here or press any key to start</div>
+    <div class="live-stats" id="live-stats">
+      <div class="live-stat"><div class="live-stat-label">WPM</div><div class="live-stat-val red" id="live-wpm">0</div></div>
+      <div class="live-stat"><div class="live-stat-label">Raw WPM</div><div class="live-stat-val" id="live-raw">0</div></div>
+      <div class="live-stat"><div class="live-stat-label">Accuracy</div><div class="live-stat-val" id="live-acc">100%</div></div>
+      <div class="live-stat"><div class="live-stat-label">Errors</div><div class="live-stat-val" id="live-err">0</div></div>
+    </div>
+    <div class="progress-wrap"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+</div>
+
+<!-- ══ RESULT SCREEN ══ -->
+<div class="screen hidden" id="screen-result">
+  <div class="result-header">
+    <div class="result-logo" id="res-logo">TYPE<em>X</em></div>
+    <div style="font-size:11px;color:var(--white-muted);letter-spacing:0.1em" id="res-test-type"></div>
+  </div>
+  <div class="result-body">
+    <div class="result-left">
+      <div class="big-stat">
+        <div class="big-stat-label">WPM</div>
+        <div class="big-stat-val" id="res-wpm">0</div>
+        <div class="big-stat-unit">correct words/min</div>
+        <div class="pb-badge" id="pb-badge" style="display:none">🏆 NEW BEST!</div>
+      </div>
+      <div class="big-stat">
+        <div class="big-stat-label">Accuracy</div>
+        <div class="big-stat-val white" id="res-acc">0%</div>
+        <div class="big-stat-unit">correct keystrokes</div>
+      </div>
+      <div class="type-info" id="res-info"></div>
+    </div>
+    <div class="result-right">
+      <div class="chart-title">WPM over time — instantaneous per second</div>
+      <div class="chart-wrap"><canvas id="wpm-chart"></canvas></div>
+      <div class="mini-stats">
+        <div class="mini-stat"><div class="mini-stat-label">Raw WPM</div><div class="mini-stat-val" id="res-raw">0</div></div>
+        <div class="mini-stat"><div class="mini-stat-label">Consistency</div><div class="mini-stat-val w" id="res-consistency">0%</div></div>
+        <div class="mini-stat"><div class="mini-stat-label">Correct / Wrong chars</div><div class="mini-stat-val w" id="res-chars">0/0</div></div>
+        <div class="mini-stat"><div class="mini-stat-label">Time</div><div class="mini-stat-val w" id="res-time">0s</div></div>
+        <div class="mini-stat"><div class="mini-stat-label">Errors</div><div class="mini-stat-val" id="res-errors">0</div></div>
+        <div class="mini-stat"><div class="mini-stat-label">Correct Words</div><div class="mini-stat-val w" id="res-correct-words">0</div></div>
+        <div class="mini-stat"><div class="mini-stat-label">Wrong Words</div><div class="mini-stat-val" id="res-wrong-words">0</div></div>
+        <div class="mini-stat"><div class="mini-stat-label">Keystrokes</div><div class="mini-stat-val w" id="res-keys">0</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="result-footer">
+    <button class="res-btn primary" id="btn-again">↺ &nbsp;try again</button>
+    <button class="res-btn secondary" id="btn-home">⌂ &nbsp;home</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// WORD BANKS
+// ═══════════════════════════════════════════════════
+const WORD_BANKS = {
+  easy: "the be to of and a in that have it for not on with he as you do at this but his by from they we say her she or an will my one all would there their what so up out if about who get which go me when make can like time no just him know take people into year your good some could them see other than then now look only come its over think also back after use two how our work first well way even new want because any these give day most us".split(" "),
+  medium: "about above across after against along among another around before behind below beneath beside between beyond bring build carry catch change choose clear climb close continue control create decide different during enough enter every example explain follow force forward found front give going ground group happen hard high hold human important include increase information keep large later learn leave light likely little local long look manage market measure middle might month most much national never north open other outside particular perhaps place plan point possible power present problem process provide public quite rather reach ready real reason receive remain replace report require result right round science second several short should since social small solve south special stand start still stop strong suggest support sure system then those though thought together toward understand until usually value voice watch water whole wide within without world would write".split(" "),
+  hard: "abbreviate acknowledgment accomplishment accommodate ambiguous bureaucratic circumference circumstantial collaborative commemorate comprehensive conscientious consciousness controversial crystallize deteriorate discrepancy distinguishable electromagnetic entrepreneurial equilibrium exaggerate extraordinary fluorescent guarantee hemorrhage hyperbole idiosyncrasy illegitimate immediately indispensable infinitesimal infrastructure intermittent juxtapose kaleidoscope knowledgeable legitimately lieutenant malnourished mathematical melancholy metamorphosis miscellaneous mountainous necessarily negotiate neighborhood oblivious occasionally omission oscillate particularly pedantic pharmaceutical philosophical pneumonia prerequisite privilege pronunciation psychology questionnaire quintessential reconnaissance referendum refrigerator relinquish reminiscent respiratory ridiculous simultaneous sophisticated subterranean surveillance technology temperature terrifying thoroughly threshold throughout unambiguous unanimous unfortunately unintelligible unnecessarily unprecedented verification vigilant vocabulary".split(" "),
+  'home-row': "asdfjkl asd jkl asdf jkl ask fall flask dad lad lass glass all shall fall glad flask salad".split(" "),
+  'top-row': "qwerty quit write quiet power tower yore type rope port wire peer wore rope topper pepper".split(" "),
+  numbers: "1 2 3 4 5 6 7 8 9 0 12 34 56 78 90 123 456 789 100 200 500 1000 2024 42 99 7 13 21".split(" "),
+  common: "the be to of and a in that have it for not on with as you do at this but from they we say her she or an will my one all would there their what so up out if about who get which go me when make can like time no just him know take people into year your good some could them see other than then now look only come its over think also back after".split(" ")
+};
+
+const PUNCT_CHARS = [',','.',';',':','?','!','-',"'",'"'];
+
+// ═══════════════════════════════════════════════════
+// PERSISTENT STORAGE (localStorage)
+// ═══════════════════════════════════════════════════
+function loadStorage(){
+  try{ return JSON.parse(localStorage.getItem('typex_data')||'null') || {runs:[],keyErrors:{},bestWpm:0,bestAcc:0}; }
+  catch(e){ return {runs:[],keyErrors:{},bestWpm:0,bestAcc:0}; }
+}
+function saveStorage(d){ try{ localStorage.setItem('typex_data',JSON.stringify(d)); }catch(e){} }
+let DB = loadStorage();
+
+// ═══════════════════════════════════════════════════
+// OPTIONS & STATE
+// ═══════════════════════════════════════════════════
+let opts = { time:30, difficulty:'easy', punctuation:false, numbers:false, practiceMode:null };
+
+let state = {
+  words:[], wordIndex:0, charIndex:0,
+  wordStates:[],
+  started:false, finished:false,
+  elapsed:0, timer:null,
+  // Per-keystroke tracking for correct stats
+  totalCharsTyped:0,       // every letter typed (no spaces, no backspaces)
+  correctCharsTyped:0,     // chars that matched expected
+  wrongCharsTyped:0,       // chars that didn't match
+  correctWords:0,
+  wrongWords:0,
+  // Per-second snapshots for graph
+  // Each entry: {sec, correctCharsThisSec, totalCharsThisSec, errorsThisSec}
+  secSnapshots:[],
+  prevSecCorrect:0,
+  prevSecTotal:0,
+  prevSecErrors:0,
+  totalErrors:0,           // cumulative wrong presses (not backspace-corrected)
+  lastSecRecorded:0,
+  keyErrorMap:{},          // key -> error count this session
+};
+
+// ═══════════════════════════════════════════════════
+// WORD GENERATION
+// ═══════════════════════════════════════════════════
+function generateWordList(count=120){
+  const bank = opts.practiceMode ? WORD_BANKS[opts.practiceMode] : WORD_BANKS[opts.difficulty];
+  let pool = [...bank];
+  let shuffled = [], res = [];
+  while(res.length < count){
+    if(!shuffled.length) shuffled = shuffle([...pool]);
+    let w = shuffled.pop();
+    if(!opts.practiceMode){
+      if(opts.punctuation && Math.random()<0.18) w = w + PUNCT_CHARS[Math.floor(Math.random()*PUNCT_CHARS.length)];
+      if(opts.numbers && Math.random()<0.15) w = String(Math.floor(Math.random()*100));
+    }
+    res.push(w);
+  }
+  return res;
+}
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a; }
+
+// ═══════════════════════════════════════════════════
+// DOM REFS
+// ═══════════════════════════════════════════════════
+const wordsRow    = document.getElementById('words-row');
+const ghostInput  = document.getElementById('ghost-input');
+const timerDisplay= document.getElementById('timer-display');
+const liveWpm     = document.getElementById('live-wpm');
+const liveRaw     = document.getElementById('live-raw');
+const liveAcc     = document.getElementById('live-acc');
+const liveErr     = document.getElementById('live-err');
+const liveStats   = document.getElementById('live-stats');
+const progressFill= document.getElementById('progress-fill');
+const cursorHint  = document.getElementById('cursor-hint');
+const decoNum     = document.getElementById('deco-num');
+const screenHome  = document.getElementById('screen-home');
+const screenTest  = document.getElementById('screen-test');
+const screenResult= document.getElementById('screen-result');
+
+// ═══════════════════════════════════════════════════
+// SCROLL TRACKING
+// ═══════════════════════════════════════════════════
+let _scrollOffset = 0;
+let _lastScrolledLine = -1;
+
+function scrollIfNeeded(wordEl){
+  if(!wordEl) return;
+  const wordOffsetTop = wordEl.offsetTop;
+  const lineH = parseFloat(getComputedStyle(wordsRow).fontSize) * 2;
+  const currentLine = Math.floor(wordOffsetTop / lineH);
+  if(currentLine > 1 && currentLine > _lastScrolledLine){
+    _lastScrolledLine = currentLine;
+    _scrollOffset -= lineH;
+    wordsRow.style.transform = `translateY(${_scrollOffset}px)`;
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// BUILD DISPLAY
+// ═══════════════════════════════════════════════════
+function buildDisplay(){
+  wordsRow.innerHTML = '';
+  wordsRow.style.transform = 'translateY(0)';
+  _scrollOffset = 0;
+  _lastScrolledLine = -1;
+
+  state.wordStates = state.words.map(w => ({
+    chars: w.split(''),
+    correct: null,
+    el: null,
+    charEls: []
+  }));
+
+  state.wordStates.forEach((ws, wi) => {
+    const wDiv = document.createElement('span');
+    wDiv.className = 'word-wrap';
+    ws.el = wDiv;
+    ws.chars.forEach(c => {
+      const s = document.createElement('span');
+      s.className = 'char';
+      s.textContent = c;
+      wDiv.appendChild(s);
+      ws.charEls.push(s);
+    });
+    wordsRow.appendChild(wDiv);
+    if(wi < state.words.length-1) wordsRow.appendChild(document.createTextNode(' '));
+  });
+
+  setCaret(0,0);
+}
+
+function setCaret(wi, ci){
+  document.querySelectorAll('.char.active').forEach(e=>e.classList.remove('active'));
+  const ws = state.wordStates[wi];
+  if(!ws) return;
+  const target = ws.charEls[ci] || ws.charEls[ws.charEls.length-1];
+  if(target){ target.classList.add('active'); scrollIfNeeded(ws.el); }
+}
+
+// ═══════════════════════════════════════════════════
+// RESET
+// ═══════════════════════════════════════════════════
+function reset(){
+  clearInterval(state.timer);
+  state = {
+    words: generateWordList(),
+    wordIndex:0, charIndex:0, wordStates:[],
+    started:false, finished:false,
+    elapsed:0, timer:null,
+    totalCharsTyped:0, correctCharsTyped:0, wrongCharsTyped:0,
+    correctWords:0, wrongWords:0,
+    secSnapshots:[], prevSecCorrect:0, prevSecTotal:0, prevSecErrors:0,
+    totalErrors:0, lastSecRecorded:0, keyErrorMap:{},
+  };
+  timerDisplay.textContent = opts.time;
+  timerDisplay.classList.add('dim');
+  timerDisplay.classList.remove('urgent');
+  liveStats.classList.remove('show');
+  progressFill.style.width = '0%';
+  cursorHint.classList.remove('typing');
+  ghostInput.value = '';
+  buildDisplay();
+  ghostInput.focus();
+}
+
+// ═══════════════════════════════════════════════════
+// INPUT HANDLING
+// ═══════════════════════════════════════════════════
+ghostInput.addEventListener('keydown', e => {
+  if(e.key==='Tab'){ e.preventDefault(); reset(); return; }
+  if(e.key==='Escape'){ goHome(); return; }
+  if(state.finished) return;
+  if(!state.started && e.key.length===1 && !e.ctrlKey && !e.metaKey) startTest();
+  if(e.key==='Backspace'){ e.preventDefault(); handleBackspace(e.ctrlKey||e.metaKey); }
+});
+
+ghostInput.addEventListener('input', e => {
+  if(state.finished || !state.started) return;
+  const val = ghostInput.value;
+  if(!val) return;
+  const ch = val[val.length-1];
+  ghostInput.value = '';
+  if(ch===' ') advanceWord();
+  else typeChar(ch);
+});
+
+function typeChar(ch){
+  const ws = state.wordStates[state.wordIndex];
+  if(!ws) return;
+
+  if(state.charIndex < ws.chars.length){
+    const expected = ws.chars[state.charIndex];
+    const correct  = ch === expected;
+    const cel      = ws.charEls[state.charIndex];
+    cel.classList.remove('active');
+
+    // ── CORRECT STATS: count every char typed (no spaces)
+    state.totalCharsTyped++;
+    if(correct){
+      cel.classList.add('correct');
+      state.correctCharsTyped++;
+    } else {
+      cel.classList.add('wrong');
+      state.wrongCharsTyped++;
+      state.totalErrors++;
+      // track which key was wrong
+      const k = expected.toLowerCase();
+      state.keyErrorMap[k] = (state.keyErrorMap[k]||0)+1;
+    }
+    state.charIndex++;
+    setCaret(state.wordIndex, state.charIndex);
+  }
+}
+
+function handleBackspace(ctrl){
+  const ws = state.wordStates[state.wordIndex];
+  if(!ws) return;
+  if(ctrl){
+    if(state.charIndex===0 && state.wordIndex>0){
+      const pw = state.wordStates[state.wordIndex-1];
+      if(pw && pw.correct===false){
+        state.wordIndex--;
+        pw.el.classList.remove('wrong-word');
+        pw.correct=null;
+        state.charIndex = pw.charEls.length;
+      }
+    }
+    const cw = state.wordStates[state.wordIndex];
+    for(let i=0;i<state.charIndex;i++){
+      const cel=cw.charEls[i]; if(cel) cel.className='char';
+    }
+    state.charIndex=0;
+    setCaret(state.wordIndex,0);
+    return;
+  }
+  if(state.charIndex>0){
+    state.charIndex--;
+    const cel=ws.charEls[state.charIndex];
+    if(cel) cel.className='char';
+    setCaret(state.wordIndex,state.charIndex);
+  } else if(state.wordIndex>0){
+    const pw = state.wordStates[state.wordIndex-1];
+    if(pw && pw.correct===false){
+      state.wordIndex--;
+      state.charIndex=pw.charEls.length;
+      pw.el.classList.remove('wrong-word');
+      pw.correct=null;
+      setCaret(state.wordIndex,state.charIndex);
+    }
+  }
+}
+
+function advanceWord(){
+  const ws = state.wordStates[state.wordIndex];
+  if(!ws) return;
+  // Word is correct only if ALL chars typed correctly AND all chars typed
+  let allCorrect = state.charIndex===ws.chars.length;
+  if(allCorrect){
+    for(let i=0;i<ws.chars.length;i++){
+      if(!ws.charEls[i].classList.contains('correct')){ allCorrect=false; break; }
+    }
+  }
+  ws.correct = allCorrect;
+  if(allCorrect){ state.correctWords++; ws.el.classList.remove('wrong-word'); }
+  else { state.wrongWords++; ws.el.classList.add('wrong-word'); }
+  state.wordIndex++;
+  state.charIndex=0;
+  if(state.wordIndex>=state.words.length){ finishTest(); return; }
+  setCaret(state.wordIndex,0);
+}
+
+// ═══════════════════════════════════════════════════
+// TIMER & STATS
+// WPM = (correct chars typed / 5) / elapsed_minutes
+//   Standard: 5 chars = 1 word
+//   "Net WPM" = correct chars only
+//   "Raw WPM" = all chars typed (correct + wrong)
+//   Accuracy  = correct chars / total chars typed × 100
+//   Instantaneous WPM = chars typed in that 1-second window / 5 / (1/60)
+// ═══════════════════════════════════════════════════
+function startTest(){
+  state.started = true;
+  cursorHint.classList.add('typing');
+  liveStats.classList.add('show');
+  timerDisplay.classList.remove('dim');
+
+  state.timer = setInterval(()=>{
+    state.elapsed += 100;
+    const remaining = opts.time*1000 - state.elapsed;
+    if(remaining<=0){ finishTest(); return; }
+
+    const secElapsed = Math.floor(state.elapsed/1000);
+    const remSec     = Math.ceil(remaining/1000);
+
+    timerDisplay.textContent = remSec;
+    if(remSec<=5) timerDisplay.classList.add('urgent');
+    progressFill.style.width = ((opts.time*1000-remaining)/(opts.time*1000)*100)+'%';
+
+    // Snapshot once per second — store the *delta* (chars typed this second)
+    if(secElapsed > state.lastSecRecorded){
+      state.lastSecRecorded = secElapsed;
+      const correctDelta = state.correctCharsTyped - state.prevSecCorrect;
+      const totalDelta   = state.totalCharsTyped   - state.prevSecTotal;
+      const errorDelta   = state.totalErrors        - state.prevSecErrors;
+      // Instantaneous WPM for this second = (correct chars this second / 5) * 60
+      const instWpm = Math.round((correctDelta/5)*60);
+      const instRaw = Math.round((totalDelta/5)*60);
+      state.secSnapshots.push({ sec:secElapsed, wpm:instWpm, raw:instRaw, errors:errorDelta });
+      state.prevSecCorrect = state.correctCharsTyped;
+      state.prevSecTotal   = state.totalCharsTyped;
+      state.prevSecErrors  = state.totalErrors;
+    }
+
+    updateLiveStats();
+  }, 100);
+}
+
+function updateLiveStats(){
+  const mins = state.elapsed/60000;
+  if(mins===0) return;
+  // Net WPM = (correct chars / 5) / minutes elapsed
+  const netWpm = Math.round((state.correctCharsTyped/5)/mins);
+  const rawWpm = Math.round((state.totalCharsTyped/5)/mins);
+  // Accuracy = correct chars / total chars typed
+  const acc = state.totalCharsTyped===0 ? 100 : Math.round((state.correctCharsTyped/state.totalCharsTyped)*100);
+  liveWpm.textContent = netWpm;
+  liveRaw.textContent = rawWpm;
+  liveAcc.textContent = acc+'%';
+  liveErr.textContent = state.totalErrors;
+}
+
+// ═══════════════════════════════════════════════════
+// FINISH
+// ═══════════════════════════════════════════════════
+function finishTest(){
+  clearInterval(state.timer);
+  if(state.finished) return;
+  state.finished = true;
+
+  const secs = state.elapsed/1000;
+  const mins  = secs/60;
+
+  // ── Final net WPM: correct chars / 5 / minutes
+  const netWpm = Math.round((state.correctCharsTyped/5)/mins);
+  // ── Final raw WPM: all chars / 5 / minutes
+  const rawWpm = Math.round((state.totalCharsTyped/5)/mins);
+  // ── Accuracy: correct chars / total chars
+  const acc = state.totalCharsTyped===0 ? 100 : Math.round((state.correctCharsTyped/state.totalCharsTyped)*100);
+  // ── Consistency: std-dev of instantaneous WPM snapshots
+  const wpmSeries = state.secSnapshots.map(s=>s.wpm);
+  const consistency = calcConsistency(wpmSeries);
+
+  // ── Save to DB
+  const isNewBest = netWpm > (DB.bestWpm||0);
+  if(netWpm > (DB.bestWpm||0)) DB.bestWpm = netWpm;
+  if(acc    > (DB.bestAcc||0)) DB.bestAcc = acc;
+  // Merge key errors
+  Object.keys(state.keyErrorMap).forEach(k=>{
+    DB.keyErrors[k] = (DB.keyErrors[k]||0) + state.keyErrorMap[k];
+  });
+  DB.runs.unshift({ wpm:netWpm, acc, time:opts.time, diff:opts.difficulty, ts:Date.now() });
+  if(DB.runs.length>20) DB.runs = DB.runs.slice(0,20);
+  saveStorage(DB);
+
+  // ── Populate result screen
+  document.getElementById('res-wpm').textContent = netWpm;
+  document.getElementById('res-acc').textContent = acc+'%';
+  document.getElementById('res-raw').textContent = rawWpm;
+  document.getElementById('res-consistency').textContent = consistency+'%';
+  document.getElementById('res-chars').textContent = `${state.correctCharsTyped} / ${state.wrongCharsTyped}`;
+  document.getElementById('res-time').textContent = secs.toFixed(1)+'s';
+  document.getElementById('res-errors').textContent = state.totalErrors;
+  document.getElementById('res-correct-words').textContent = state.correctWords;
+  document.getElementById('res-wrong-words').textContent = state.wrongWords;
+  document.getElementById('res-keys').textContent = state.totalCharsTyped;
+  document.getElementById('res-test-type').textContent =
+    `time ${opts.time}s · ${opts.practiceMode||opts.difficulty} · english`;
+  document.getElementById('res-info').innerHTML =
+    `<span>time</span> ${opts.time}s &nbsp;<span>mode</span> ${opts.practiceMode||opts.difficulty}<br>`+
+    `${opts.punctuation?'punctuation · ':''}${opts.numbers?'numbers':''}`;
+
+  const pbBadge = document.getElementById('pb-badge');
+  pbBadge.style.display = isNewBest ? 'inline-flex' : 'none';
+
+  screenTest.classList.add('hidden');
+  screenResult.classList.remove('hidden');
+  drawChart();
+}
+
+// ═══════════════════════════════════════════════════
+// CONSISTENCY (coefficient of variation, inverted)
+// ═══════════════════════════════════════════════════
+function calcConsistency(series){
+  if(series.length<2) return 100;
+  const mean = series.reduce((a,b)=>a+b,0)/series.length;
+  if(mean===0) return 0;
+  const variance = series.reduce((s,v)=>s+(v-mean)**2,0)/series.length;
+  const sd = Math.sqrt(variance);
+  return Math.max(0, Math.round(100 - (sd/mean)*100));
+}
+
+// ═══════════════════════════════════════════════════
+// CHART — instantaneous WPM per second
+// ═══════════════════════════════════════════════════
+let chartInstance = null;
+function drawChart(){
+  const ctx = document.getElementById('wpm-chart');
+  if(chartInstance){ chartInstance.destroy(); chartInstance=null; }
+
+  const snaps  = state.secSnapshots;
+  const labels = snaps.map(s=>s.sec+'s');
+  const wpmData = snaps.map(s=>s.wpm);
+  const rawData = snaps.map(s=>s.raw);
+  // Error bar: show error count per second as scatter points
+  const errData = snaps.map(s=>s.errors>0 ? s.wpm : null);
+
+  chartInstance = new Chart(ctx,{
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        {
+          label:'WPM (net)',
+          data: wpmData,
+          borderColor:'#e03030',
+          backgroundColor:'rgba(224,48,48,0.07)',
+          borderWidth:2.5,
+          pointRadius: wpmData.length<40?4:2,
+          pointBackgroundColor:'#e03030',
+          pointBorderColor:'#0a0a0a',
+          pointBorderWidth:1.5,
+          tension:0.3,
+          fill:true,
+          yAxisID:'y',
+        },
+        {
+          label:'Raw WPM',
+          data: rawData,
+          borderColor:'#555555',
+          backgroundColor:'transparent',
+          borderWidth:1.5,
+          pointRadius:0,
+          tension:0.3,
+          borderDash:[4,4],
+          yAxisID:'y',
+        },
+        {
+          label:'Error spike',
+          data: errData,
+          borderColor:'transparent',
+          backgroundColor:'transparent',
+          pointRadius: errData.map(v=>v!==null?7:0),
+          pointBackgroundColor:'transparent',
+          pointBorderColor:'#ff4444',
+          pointBorderWidth:2,
+          pointStyle:'crossRot',
+          yAxisID:'y',
+          tension:0,
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      animation:{duration:600},
+      plugins:{
+        legend:{labels:{color:'#888880',font:{family:"'JetBrains Mono'",size:11},boxWidth:14,padding:14}},
+        tooltip:{
+          backgroundColor:'#111111',borderColor:'#333',borderWidth:1,
+          titleColor:'#f0ece4',bodyColor:'#888880',
+          titleFont:{family:"'JetBrains Mono'",size:11},
+          bodyFont:{family:"'JetBrains Mono'",size:11},
+          padding:10,
+          callbacks:{
+            label(ctx){
+              if(ctx.dataset.label==='Error spike') return null;
+              return ` ${ctx.dataset.label}: ${ctx.parsed.y}`;
+            }
+          }
+        }
+      },
+      scales:{
+        x:{
+          grid:{color:'#1a1a1a'},
+          ticks:{color:'#444',font:{size:10,family:"'JetBrains Mono'"},maxTicksLimit:20},
+          border:{color:'#222'}
+        },
+        y:{
+          position:'left',
+          min:0,
+          grid:{color:'#1a1a1a'},
+          ticks:{color:'#777',font:{size:10,family:"'JetBrains Mono'"}},
+          border:{color:'#222'},
+          title:{display:true,text:'WPM',color:'#444',font:{size:10,family:"'JetBrains Mono'"}}
+        }
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// KEYBOARD HEATMAP
+// ═══════════════════════════════════════════════════
+const KB_ROWS = [
+  ['q','w','e','r','t','y','u','i','o','p'],
+  ['a','s','d','f','g','h','j','k','l',';'],
+  ['z','x','c','v','b','n','m',',','.'],
+];
+
+function buildKeyboard(){
+  const container = document.getElementById('keyboard-heatmap');
+  container.innerHTML='';
+  const errors = DB.keyErrors || {};
+  const maxErr = Math.max(...Object.values(errors), 1);
+
+  KB_ROWS.forEach((row, ri) => {
+    const rowDiv = document.createElement('div');
+    rowDiv.className='key-row';
+    if(ri===1) rowDiv.style.marginLeft='18px';
+    if(ri===2) rowDiv.style.marginLeft='36px';
+    row.forEach(k=>{
+      const kDiv=document.createElement('div');
+      kDiv.className='key';
+      kDiv.textContent=k.toUpperCase();
+      const errCount = errors[k]||0;
+      const ratio = errCount/maxErr;
+      if(ratio===0)           kDiv.classList.add('key-error-0');
+      else if(ratio<0.25)     kDiv.classList.add('key-error-1');
+      else if(ratio<0.5)      kDiv.classList.add('key-error-2');
+      else if(ratio<0.75)     kDiv.classList.add('key-error-3');
+      else                    kDiv.classList.add('key-error-4');
+      if(errCount>0){
+        kDiv.title=`${k.toUpperCase()}: ${errCount} error${errCount>1?'s':''}`;
+      }
+      rowDiv.appendChild(kDiv);
+    });
+    container.appendChild(rowDiv);
+  });
+
+  // Check if we have any data
+  const hasData = Object.keys(errors).length>0;
+  document.getElementById('heatmap-subtitle').textContent = hasData
+    ? 'Darker red = more errors on that key'
+    : 'No data yet — complete a test to see your weak keys';
+}
+
+function buildRunsList(){
+  const el = document.getElementById('runs-list');
+  if(!DB.runs||DB.runs.length===0){
+    el.innerHTML='<div class="no-runs">Complete a test to see results here</div>';
+    return;
+  }
+  el.innerHTML='';
+  DB.runs.slice(0,6).forEach((r,i)=>{
+    const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+    const date  = new Date(r.ts);
+    const timeStr= date.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    const row=document.createElement('div');
+    row.className='run-row';
+    row.innerHTML=`
+      <div class="run-wpm">${r.wpm}</div>
+      <div class="run-details">${r.diff} · ${r.time}s<br>${timeStr}</div>
+      <div class="run-acc">${r.acc}%</div>
+      <div class="run-medal">${medal}</div>`;
+    el.appendChild(row);
+  });
+}
+
+function buildPBCards(){
+  document.getElementById('pb-wpm').textContent = DB.bestWpm||'—';
+  document.getElementById('pb-acc').textContent = DB.bestAcc ? DB.bestAcc+'%':'—';
+  document.getElementById('pb-runs').textContent = DB.runs?.length||0;
+}
+
+function refreshHome(){
+  buildKeyboard();
+  buildRunsList();
+  buildPBCards();
+}
+
+// ═══════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════
+function goHome(){
+  screenTest.classList.add('hidden');
+  screenResult.classList.add('hidden');
+  screenHome.classList.remove('hidden');
+  refreshHome();
+}
+
+function goTest(){
+  screenHome.classList.add('hidden');
+  screenResult.classList.add('hidden');
+  screenTest.classList.remove('hidden');
+  opts.practiceMode = null;
+  reset();
+}
+
+function goTestWithPractice(mode){
+  opts.practiceMode = mode;
+  screenHome.classList.add('hidden');
+  screenResult.classList.add('hidden');
+  screenTest.classList.remove('hidden');
+  reset();
+}
+
+// ═══════════════════════════════════════════════════
+// OPTION BUTTONS
+// ═══════════════════════════════════════════════════
+document.querySelectorAll('[data-time]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('[data-time]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    opts.time=parseInt(btn.dataset.time);
+    decoNum.textContent=opts.time;
+    reset();
+  });
+});
+document.querySelectorAll('[data-diff]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('[data-diff]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    opts.difficulty=btn.dataset.diff;
+    opts.practiceMode=null;
+    reset();
+  });
+});
+document.querySelectorAll('[data-toggle]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const k=btn.dataset.toggle;
+    opts[k]=!opts[k];
+    btn.classList.toggle('active-toggle',opts[k]);
+    reset();
+  });
+});
+document.querySelectorAll('[data-practice]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    goTestWithPractice(btn.dataset.practice);
+  });
+});
+
+// ═══════════════════════════════════════════════════
+// BUTTON LISTENERS
+// ═══════════════════════════════════════════════════
+document.getElementById('home-start-btn').addEventListener('click', goTest);
+document.getElementById('btn-again').addEventListener('click',()=>{
+  screenResult.classList.add('hidden');
+  screenTest.classList.remove('hidden');
+  reset();
+});
+document.getElementById('btn-home').addEventListener('click', goHome);
+document.getElementById('test-logo').addEventListener('click', goHome);
+document.getElementById('res-logo').addEventListener('click', goHome);
+document.querySelector('#screen-home .logo').addEventListener('click', goHome);
+
+// Click test area to focus
+document.getElementById('screen-test').addEventListener('click',e=>{
+  if(e.target.tagName!=='BUTTON') ghostInput.focus();
+});
+
+// Global key capture
+document.addEventListener('keydown',e=>{
+  if(!screenTest.classList.contains('hidden') && e.target!==ghostInput && e.key.length===1 && !e.ctrlKey && !e.metaKey){
+    ghostInput.focus();
+  }
+});
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+refreshHome();
+</script>
+</body>
+</html>
